@@ -1,6 +1,8 @@
 package io.java.book;
 
-import jdk.jfr.ContentType;
+import io.java.userbooks.UserBooks;
+import io.java.userbooks.UserBooksPrimaryKey;
+import io.java.userbooks.UserBooksRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
@@ -16,8 +18,11 @@ public class BookController {
 
     private BookRepository bookRepository;
 
-    public BookController(BookRepository bookRepository) {
+    private UserBooksRepository userBooksRepository;
+
+    public BookController(BookRepository bookRepository, UserBooksRepository userBooksRepository) {
         this.bookRepository = bookRepository;
+        this.userBooksRepository = userBooksRepository;
     }
 
     @RequestMapping("/books/{bookId}")
@@ -41,10 +46,19 @@ public class BookController {
             model.addAttribute("book",book);
 
             //Checking User Authentication status TODO
-            /*if (principle != null && principle.getAttribute("login") != null){
-                System.out.println(principle.toString());
-
-            }*/
+            if (principle != null && principle.getAttribute("login") != null){
+                String userId = principle.getAttribute("login");
+                model.addAttribute("loginId",userId);
+                UserBooksPrimaryKey key = new UserBooksPrimaryKey();
+                key.setBookId(bookId);
+                key.setUserId(userId);
+                Optional<UserBooks> userBooks = userBooksRepository.findById(key);
+                if (userBooks.isPresent()){
+                    model.addAttribute("userBooks",userBooks.get());
+                }else {
+                    model.addAttribute("userBooks", new UserBooks());
+                }
+            }
 
             return "book";
         }
